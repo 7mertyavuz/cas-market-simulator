@@ -56,23 +56,3 @@ def test_history_accumulates():
     for _ in range(3):
         env.step()
     assert len(env.history) == 4  # baslangic + 3 step
-
-
-def test_step_with_extra_impact_moves_price_up():
-    env = Environment("SIM/USDT", 100.0, impact=0.01)
-    state = env.step(extra_impact=5.0)
-    assert state.price > 100.0
-
-
-def test_step_with_negative_extra_impact_moves_price_down():
-    env = Environment("SIM/USDT", 100.0, impact=0.01)
-    state = env.step(extra_impact=-5.0)
-    assert state.price < 100.0
-
-
-def test_step_extra_impact_combines_with_orders():
-    env = Environment("SIM/USDT", 100.0, impact=0.01)
-    env.submit(Order(agent_id="a", symbol="SIM/USDT", side="buy", size=2.0))
-    state = env.step(extra_impact=3.0)
-    # net = 2 (emir) + 3 (sok) = 5
-    assert abs(state.price - 100.0 * (1 + 0.01 * 5.0)) < 1e-9

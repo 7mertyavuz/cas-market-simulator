@@ -5,9 +5,6 @@ naif bir sekilde fiyata yansitan boru-hatti iskeleti. Faz 5'te
 microstructure-analyzer'in simulasyon modu "cevre" olarak buraya
 takilacak (order book / eslesme motoru); simdilik sozlesme sabit
 kalsin diye kasitli olarak kaba/basit.
-Faz 6: step() artik opsiyonel bir `extra_impact` kabul ediyor --
-disardan (macro ShockEvent akisi) enjekte edilen, ajan emirlerinden
-BAGIMSIZ ekstra fiyat basinci (bkz. engine/loop.py sok enjeksiyonu).
 """
 from __future__ import annotations
 
@@ -63,14 +60,9 @@ class Environment:
             raise ValueError(f"sembol uyumsuz: {order.symbol} != {self.symbol}")
         self._pending.append(order)
 
-    def step(self, *, extra_impact: float = 0.0) -> EnvironmentState:
-        """Bekleyen emirleri uygular, fiyati gunceller, tick'i ilerletir.
-
-        extra_impact: ajan emirlerinden bagimsiz, disaridan enjekte
-        edilen net "birim" basinci (orn. bir ShockEvent'in o anki
-        agirlikli buyuklugu). Ayni impact carpanini kullanir."""
+    def step(self) -> EnvironmentState:
+        """Bekleyen emirleri uygular, fiyati gunceller, tick'i ilerletir."""
         net = sum(o.size if o.side == "buy" else -o.size for o in self._pending)
-        net += extra_impact
         self._price = max(self._price * (1.0 + self._impact * net), 1e-8)
         self._tick += 1
         self._pending.clear()
