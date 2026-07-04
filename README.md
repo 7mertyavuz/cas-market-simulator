@@ -1,166 +1,260 @@
-# cas-market-simulator
+<div align="center">
 
-Entegrasyon + CAS (Karmaşık Uyarlanabilir Sistem) simülasyon katmanı.
-Mimari ve gerekçe için [`PLAN.md`](PLAN.md), faz haritası için
-[`FAZ-PLANI.md`](FAZ-PLANI.md), ortak sözleşmeler için
-[`prompts/00-ORTAK-SOZLESME.md`](prompts/00-ORTAK-SOZLESME.md).
+# 🧠 cas-market-simulator
 
-## Durum: Faz 0 + Faz 1 + Faz 2 + Faz 3 + Faz 4 tamamlandı
+**Karmaşık Uyarlanabilir Sistem (CAS) tabanlı piyasa simülatörü**
+_İki katman: sinyal beyni (`signalcore`) + çok-ajanlı piyasa ekosistemi — bir dürüstlük katmanıyla mühürlenmiş._
 
-Faz 0: boru hattı uçtan uca bağlı. Faz 1: signalcore artık gerçek bir
-"beyin" — 6 bağımsız faktör + rejim yönlendirme + risk motoru + tam
-doğrulama iskeleti. Faz 2: formasyoncu — mum + grafik formasyonları
-tespit ediliyor. Faz 3: üç bileşen tek karta akıyor + forward-test
-omurgası (paper execution + journal) kuruldu. Faz 4: 5 yeni sensör
-(derivatives, orderbook, onchain, intermarket, cross_exchange) düşük
-ağırlıkla karta oy veriyor (182/182 test yeşil).
+<br/>
 
-**Önemli kısıt:** Bu oturumda yalnızca `cas-market-simulator` klasörüne
-erişim vardı — `macro-sentiment-agent` ve `microstructure-analyzer`
-repolarına erişilemedi. Bu yüzden Faz 3'teki `SimSentimentFeed`/
-`SimFlowFeed`, o repoların GERÇEK kodunu sarmıyor; aynı `SentimentFeed`/
-`FlowFeed` Protocol'üne uyan, deterministik mean-reverting sentetik
-süreçlerle üretilmiş yer tutuculardır. Gerçek repolara erişim
-sağlandığında bu iki dosyadaki sınıflar, Protocol imzası korunarak,
-gerçek simülasyon modlarına bağlanacak şekilde değiştirilmelidir.
+![tests](https://img.shields.io/badge/tests-314%20passing-2ea44f?style=flat-square)
+![python](https://img.shields.io/badge/python-3.11%2B-3776ab?style=flat-square&logo=python&logoColor=white)
+![deps](https://img.shields.io/badge/deps-NumPy%20only-013243?style=flat-square&logo=numpy&logoColor=white)
+![no external APIs](https://img.shields.io/badge/offline-first-6f42c1?style=flat-square)
+![phases](https://img.shields.io/badge/roadmap-Faz%200→9%20✓-orange?style=flat-square)
+![license](https://img.shields.io/badge/license-MIT-black?style=flat-square)
 
-```
-cas_market_simulator/
-  adapters/       contracts.py (SentimentState, ShockEvent, FlowState,
-                   FactorVote, PatternHit, Card + Protocol'ler)
-                   bars.py (Environment tick geçmişi -> signalcore OHLCVBar)
-                   sentiment_feed.py / flow_feed.py: Stub* (Faz 0, sabit) +
-                     Sim* (Faz 3, deterministik mean-reverting süreç —
-                     gerçek repo yerine geçici yer tutucu, yukarıdaki kısıtı oku)
-                   factor_brain.py: StubFactorBrain (Faz 0) +
-                     SignalCoreFactorBrain (Faz 3 — gerçek signalcore.brain'i
-                     sarar, extra_factors'u düşük ağırlıkla çevirir)
-  environment/     minimal Environment: emir -> fiyat etkisi -> tick
-  agents/          Agent taban sınıfı (observe/decide/act) + NoopAgent
-  engine/          senkron tick döngüsü (Engine, SimulationConfig) —
-                   artık her tick'te gerçek OHLCV bar üretip brain'e veriyor,
-                   Journal + PaperExecutor'u tetikliyor
-  analysis/        execution.py (PaperExecutor: slipaj+komisyon modeli),
-                   journal.py (forward-test defteri: sinyal -> N tick sonra
-                   sonuç, win_rate/avg_pnl_pct)
-  tests/           55 test (contracts, environment, agents, feed'ler,
-                   bars/factor_brain adaptörleri, execution, journal, e2e)
+</div>
 
-signalcore/        yeni indikatör+formasyon motoru
-  core/
-    types.py        FactorVote, PatternHit, Card, OHLCVBar
-    ohlcv.py         bar doğrulama + to_arrays yardımcısı
-    registry.py      faktör kayıt + ağırlık tablosu
-  feeds.py           rejim-anahtarlamalı GBM sentetik OHLCV üreteci
-  indicators/        _math.py (paylaşılan saf-numpy formüller) +
-                      trend, momentum, volatility, meanrev, volume, structure
-                      (her biri saf fonksiyon: bars -> FactorVote)
-  combine/           aggregator.py (vote×weight → yön+güven),
-                      regime_router.py (Hurst/ER → trend↔MR ağırlık yönlendirme,
-                      RANDOM rejimde güven kısma), registry_setup.py
-  risk/              sizing.py (yarım-Kelly boyutlandırma),
-                      levels.py (ATR-stop/TP/geçersizlik)
-  validation/        walkforward.py (nedensel/causal değerlendirme),
-                      leakage.py (gelecek-veri sızıntısı + belirlenimcilik testi),
-                      factor_tracker.py (IC/hit-rate defteri — ağırlık artışı
-                      buradan pozitif katkı olmadan verilmez),
-                      conformal.py (split-conformal belirsizlik bandı)
-  patterns/          candles.py (engulfing, hammer/shooting-star, doji,
-                      morning/evening star), chart.py (double top/bottom,
-                      triangle, omuz-baş-omuz, bayrak/kama — swing-point
-                      geometrisine dayalı, parametrik), levels.py
-                      (destek/direnç, pivot, likidite seviyeleri),
-                      detector.py (hepsini tarar -> list[PatternHit] +
-                      tek bir "patterns" oyu)
-  indicators/derivatives.py, orderbook.py, onchain.py, intermarket.py,
-                      cross_exchange.py: her biri kendi State tipi +
-                      Sim*Feed (deterministik sentetik üreteç, gerçek
-                      API/RPC yok) + saf factor fonksiyonu.
-                      sensors.py: compute_sensor_votes() hepsini tek bir
-                      listeye indirger, sabit düşük ağırlık (0.2) ile.
-  brain.py           analyze(symbol, bars, extra_factors, sensor_states)
-                      -> Card (registry + regime_router + risk +
-                      patterns + sensor oyları hepsi burada birleşir)
-  tests/             127 test (indicators, aggregator, regime_router,
-                      risk, validation, patterns, sensörler, brain uçtan uca)
+---
+
+> ⚠️ **Araştırma / PoC — yatırım tavsiyesi değildir.** Simülasyon ≠ kehanet.
+> Amaç bir "alfa" iddiası değil; basit kuralların çarpışmasından **ortaya çıkan
+> (emergent)** davranışı ölçülebilir ve dürüst biçimde gözlemlemektir.
+
+---
+
+## 🎯 Ne işe yarar?
+
+Piyasalar birbirini gözleyen, birbirine tepki veren binlerce basit aktörün
+kolektif sonucudur — yani klasik bir **karmaşık uyarlanabilir sistem**. Bu repo
+o sistemi iki katmanda modeller:
+
+| Katman | Rol | Sorduğu soru |
+|:--|:--|:--|
+| 🧩 **`signalcore`** | Sinyal beyni — indikatör + formasyon + rejim + risk | *"Şu an ne alınmalı/satılmalı?"* |
+| 🐜 **CAS Motoru** | Çok-ajanlı ekosistem — momentum, balina, likidasyon, panik… | *"Bu aktörler bir arada neyi doğurur?"* |
+
+Bu iki katman **kapalı bir döngüdür**: ajan popülasyonunun ürettiği kolektif
+davranış (`crowd_emergence`) beyne bir faktör olarak geri beslenir — beyin
+kalabalığı okur, kalabalık fiyatı hareket ettirir, fiyat beyni besler.
+
+---
+
+## 🌐 Büyük resim — hibrit CAS ekosistemi
+
+Bu simülatör üç bağımsız reponun buluştuğu **merkezdir**. Diğer ikisi birer
+"duyu organı"; simülatör bunları yalnızca **veri sözleşmeleri** üzerinden okur
+(kod bağımlılığı yok).
+
+```mermaid
+flowchart LR
+    subgraph MICRO["🔬 microstructure-analyzer"]
+        direction TB
+        M1["Mempool → decode → aktör etiketi<br/>OFI · VPIN · MEV tespiti"]
+    end
+    subgraph MACRO["📰 macro-sentiment-agent"]
+        direction TB
+        S1["Haber · Fed · Sosyal → NLP<br/>panic / euphoria / fed-tone"]
+    end
+    subgraph SIM["🧠 cas-market-simulator (bu repo)"]
+        direction TB
+        B["signalcore beyni"]
+        E["CAS ajan motoru"]
+        B <--> E
+    end
+
+    M1 -- "FlowState<br/>(akış/toksisite)" --> SIM
+    S1 -- "SentimentState + ShockEvent<br/>(duyarlılık/şok)" --> SIM
+    SIM -- "Card<br/>(yön · güven · risk)" --> OUT["📊 Karar Kartı"]
+
+    style SIM fill:#1f2937,stroke:#f59e0b,stroke-width:2px,color:#fff
+    style MICRO fill:#0f3d3e,stroke:#2dd4bf,color:#fff
+    style MACRO fill:#3b0764,stroke:#c084fc,color:#fff
+    style OUT fill:#064e3b,stroke:#34d399,color:#fff
 ```
 
-**Not:** `signalcore` uzun vadede ayrı bir repo olarak planlanmıştı
-(bkz. `prompts/03-...md`), ama bu oturumda yalnızca `cas-market-simulator`
-klasörüne erişim vardı; bu yüzden şimdilik bu repo içinde bağımsız bir
-alt-paket olarak duruyor. `cas_market_simulator` içindeki hiçbir modül
-`signalcore`'un iç modüllerine doğrudan bağlı değil — yalnızca
-`adapters/contracts.py`'deki ortak sözleşme üzerinden konuşacaklar
-(Faz 3'te `adapters/factor_brain.py` gerçek `signalcore.brain`'i
-saracak). İstenirse `signalcore/` ayrı bir repoya taşınabilir; kod
-zaten bağımsız, tek değişiklik import kökünün taşınması olur.
+| Repo | Üretir | Sözleşme tipi |
+|:--|:--|:--|
+| 🔬 [`microstructure-analyzer`](../microstructure-analyzer) | DEX akış mikroyapısı, MEV, aktör karışımı | `FlowState` |
+| 📰 [`macro-sentiment-agent`](../macro-sentiment-agent) | Haber/Fed/sosyal duyarlılık + dışsal şok | `SentimentState`, `ShockEvent` |
+| 🧠 **cas-market-simulator** | Sinyal beyni + ajan ekosistemi + dürüstlük | `FactorVote`, `PatternHit`, `Card` |
 
-## Çalıştırma
+> Tüm tipler `cas_market_simulator/adapters/contracts.py` içinde `Protocol`
+> olarak sabittir. Her bileşen kendi reposunda gelişir; buluşma noktası yalnızca
+> bu sözleşmedir (gevşek bağlılık).
+
+---
+
+## 🏗️ İç mimari — iki katmanlı kapalı döngü
+
+```mermaid
+flowchart TD
+    FEED["FlowFeed + SentimentFeed<br/>(sim/gerçek)"] --> BRAIN
+
+    subgraph BRAIN["🧩 signalcore beyni — brain.analyze()"]
+        direction TB
+        F["6 çekirdek faktör<br/>trend·momentum·vol·meanrev·volume·structure"]
+        SENS["5 sensör<br/>derivatives·orderbook·onchain·intermarket·cross-exchange"]
+        PAT["formasyon dedektörü<br/>mum + grafik formasyonları"]
+        RR["rejim yönlendirici<br/>Hurst/ER → trend↔MR ağırlık"]
+        F & SENS & PAT --> AGG["aggregator<br/>(vote × weight)"]
+        AGG --> RR --> RISK["risk motoru<br/>yarım-Kelly · ATR stop/TP · kuyruk tavanı"]
+    end
+
+    RISK --> CARD["📇 Card<br/>yön · güven · oylar · risk"]
+
+    subgraph CAS["🐜 CAS ajan motoru — Engine._tick()"]
+        direction TB
+        POP["12+ ajan popülasyonu"]
+        ENV["Environment<br/>emir → fiyat etkisi → OHLCV"]
+        POP -->|emirler| ENV
+        ENV -->|fiyat| POP
+        ENV --> EMER["emergence metrikleri<br/>kaskad · senkron · otokorelasyon"]
+    end
+
+    CARD -.-> POP
+    ENV --> BARS["OHLCV bar geçmişi"] --> BRAIN
+    EMER -->|"crowd_emergence_score<br/>[-1,+1]"| BRAIN
+
+    style BRAIN fill:#111827,stroke:#60a5fa,color:#fff
+    style CAS fill:#111827,stroke:#f472b6,color:#fff
+    style CARD fill:#064e3b,stroke:#34d399,color:#fff
+    style EMER fill:#7c2d12,stroke:#fb923c,color:#fff
+```
+
+**Geri besleme döngüsü (Faz 7):** her tick'te son 60 tick'ten
+`crowd_emergence_score` hesaplanır → beyne düşük ağırlıklı bir faktör olarak
+girer → beyin kararı ajanları etkiler → ajanlar fiyatı hareket ettirir → döngü
+kapanır.
+
+---
+
+## 🐜 Ajan ekosistemi
+
+Her ajan **tek kural, ~50–90 satır**. Zenginlik kuralların basitliğinden değil,
+etkileşimlerinden doğar.
+
+| Ajan | Davranışı | Rolü |
+|:--|:--|:--|
+| `MomentumAgent` | Yükseliyorsa al | Trend / balon büyütücü |
+| `MarketMakerAgent` | İki yönlü kotasyon; vol artınca çekil | Likidite / denge |
+| `PanicAgent` | Doğrulanmış düşüşte gecikmeli sat | Aşağı kaskad tetikleyici |
+| `LiquidationEngineAgent` | Kaldıraçlı havuz; eşik kırılınca zorunlu kapat | 💥 **Kaskadın yıldızı** |
+| `WhaleAgent` | Büyük, seyrek, yön belirleyici emirler | Şok kaynağı |
+| `ArbitrageAgent` | Referans fiyata yakınsa | Ortalama-döndürücü |
+| `MevAgent` | Kısa-vade momentumu büyüt (sandwich analogu) | Mikro-yağmacı |
+| `NewsReactorAgent` | `ShockEvent`'e tepki + üssel sönüm | Makro köprüsü |
+| `ContrarianAgent` | Aşırı uzamada ters pozisyon | Denge / fitil |
+| `AdaptiveAgent` | Zarar edince parametre mutasyonu | 🧬 Tek-ajan evrimi |
+| `RegimeSwitcherAgent` | Verimlilik oranıyla trend↔MR geçişi | Uyarlanma |
+| `HerdAgent` | En kârlı ajanı taklit et | 🐑 Sürü / balon |
+
+---
+
+## 🛡️ Dürüstlük katmanı (Faz 9)
+
+Bir simülatörün en tehlikeli yanı kendini kandırabilmesidir. Bu katman, üretilen
+her sinyali **aşırı-uyum ve şansa karşı** sınar:
+
+```mermaid
+flowchart LR
+    STRAT["Strateji"] --> CPCV["CPCV<br/>Combinatorial Purged CV"]
+    STRAT --> DSR["Deflated Sharpe<br/>çoklu-deneme cezası"]
+    STRAT --> TAIL["Kuyruk riski<br/>VaR · CVaR · Hill/EVT"]
+    STRAT --> CAL["Kalibrasyon<br/>stylized facts"]
+    CPCV & DSR & TAIL & CAL --> V{"Gerçek edge var mı?"}
+    V -->|"naif MA-kesişim"| NO["❌ %87 negatif skor · DSR≈0<br/>DOĞRU ŞEKİLDE reddedildi"]
+    V -->|"gerçek strateji"| YES["✅ düşük negatif oran · DSR≥0.95"]
+
+    style NO fill:#7f1d1d,stroke:#ef4444,color:#fff
+    style YES fill:#064e3b,stroke:#34d399,color:#fff
+```
+
+Demo'daki naif strateji bilerek zayıftır — **katmanın çalıştığını kanıtlamak
+için**. `portfolio.py` ayrıca scipy'siz sıfırdan **HRP** (Hierarchical Risk
+Parity) + korelasyon limiti + günlük risk bütçesi ölçeklendirmesi sağlar.
+
+---
+
+## 🗺️ Yol haritası — Faz 0 → 9
+
+| Faz | Başlık | Öne çıkan | Test |
+|:--:|:--|:--|:--:|
+| 0️⃣ | İskelet | Uçtan uca boru hattı bağlı | ✅ |
+| 1️⃣ | Beyin | 6 faktör + rejim + risk + doğrulama | ✅ |
+| 2️⃣ | Formasyoncu | Mum + grafik formasyonları | ✅ |
+| 3️⃣ | Omurga | Gerçek `SignalCoreFactorBrain` + paper exec + journal | ✅ |
+| 4️⃣ | Sensörler | 5 yeni düşük-ağırlıklı sensör | ✅ |
+| 5️⃣ | CAS başlıyor | Momentum / MM / panik ajanları | ✅ |
+| 6️⃣ | Kaskad | +6 ajan + şok → **ölçülen −%23 kaskad** | ✅ |
+| 7️⃣ | Kapalı döngü | `crowd_emergence` beyne geri besleniyor | ✅ |
+| 8️⃣ | Meta ajanlar | Evrim + rejim geçişi + sürü | ✅ |
+| 9️⃣ | Dürüstlük | Kalibrasyon · CPCV · DSR · kuyruk · HRP | ✅ **314/314** |
+
+**Faz 6 vaka çalışması:** tick 100'de scriptli panik şoku → 20 tick'te **−%23
+kaskad**, 26 pozisyon likide, ajan senkronizasyonu **0.82**, getiri
+otokorelasyonu **+0.78**. Neden izlenebilir: şok → panik/likidasyon → fiyat
+çöküşü.
+
+---
+
+## 🚀 Çalıştırma
 
 ```bash
 pip install -r requirements.txt
+pytest -q                                   # 314 test, tamamı yeşil
 
-# testler (182 test, tamamı yeşil)
-pytest -q
-
-# Faz 0 demo: stub feed -> ajan -> environment -> log basan tick döngüsü
-PYTHONPATH=. python3 scripts/run_faz0_demo.py
-
-# signalcore demo: sentetik OHLCV üret + doğrula
-PYTHONPATH=. python3 scripts/run_signalcore_demo.py
-
-# Faz 1/2 demo: brain.analyze() -> Card (faktörler+formasyonlar) + her faktör için walk-forward IC/hit-rate
-PYTHONPATH=. python3 scripts/run_signalcore_brain_demo.py
-
-# Faz 3 demo: gerçek SignalCoreFactorBrain + sim sentiment/flow + paper execution + forward-test defteri
-PYTHONPATH=. python3 scripts/run_faz3_demo.py
+# Demolar (her biri kendi fazını gösterir):
+PYTHONPATH=. python3 scripts/run_faz3_demo.py   # beyin + sim feed + forward-test
+PYTHONPATH=. python3 scripts/run_faz6_demo.py   # 9 ajan + panik şoku → kaskad
+PYTHONPATH=. python3 scripts/run_faz7_demo.py   # crowd_emergence kartta faktör
+PYTHONPATH=. python3 scripts/run_faz8_demo.py   # meta ajanlar → popülasyon kayması
+PYTHONPATH=. python3 scripts/run_faz9_demo.py   # dürüstlük katmanı + HRP
 ```
 
-## "Bitti" kriteri (FAZ-PLANI.md)
+Tüm çekirdek **saf Python + NumPy** — scipy/sklearn/torch yok, harici API/anahtar
+gerekmez. Feed'ler varsayılan olarak deterministik **simülasyon modunda** çalışır.
 
-**Faz 0**
-- [x] `cas-market-simulator` paket yapısı kuruldu.
-- [x] `adapters/contracts.py` ortak sözleşmedeki tüm tipleri + Protocol'leri içeriyor.
-- [x] `signalcore/core/types.py`, `ohlcv.py`, `registry.py` + rejim-anahtarlamalı sentetik OHLCV üreteci çalışıyor.
-- [x] Stub `SentimentFeed`/`FlowFeed`/`FactorBrain` sahte veri döndürüyor.
-- [x] Stub feed → tek boş ajan (`NoopAgent`) → boş `Environment` → log basan tick döngüsü çalışıyor.
+---
 
-**Faz 1**
-- [x] 6 düşük-korelasyonlu faktör (trend, momentum, volatility, meanrev, volume, structure) + `aggregator` + `regime_router` + `risk` çalışıyor.
-- [x] `validation/` içinde walk-forward + leakage + factor_tracker + conformal çalışıyor ve testli.
-- [x] `brain.analyze()` sentetik OHLCV ile uçtan uca `Card` üretiyor (yön, güven, oylar, risk seviyeleri).
-- [x] `run_signalcore_brain_demo.py` her faktör için IC/hit-rate/leakage raporu basıyor — kural gereği (factor_tracker'da pozitif katkı olmadan ağırlık artmaz) uygulanıyor: örnek koşuda `volatility` ve `meanrev` negatif IC gösterdiği için ağırlık artışına izin verilmiyor, bu beklenen ve istenen davranış.
+## 📁 Proje yapısı
 
-**Faz 2**
-- [x] `patterns/detector.py` mum formasyonları (engulfing, hammer/shooting-star, doji, morning/evening star) + en az 3 grafik formasyonu (double top/bottom, head&shoulders, triangle, flag/wedge) tespit ediyor.
-- [x] Her formasyon parametrik + kurallı, hazırlanmış sentetik zigzag barlarla testli (sezgi kodlanmadı).
-- [x] Formasyonlar `Card.patterns`'te görsel liste olarak listeleniyor **ve** `patterns_to_vote()` ile aggregator'a tek bir ek oy olarak giriyor (demo'da görüldüğü gibi bir `inverse_head_and_shoulders` tespiti kartın yönünü SHORT'tan NEUTRAL'a çekti).
-- [x] Testler yeşil (135/135 → şimdi Faz 3 ile birlikte 166/166).
+```
+cas_market_simulator/
+  adapters/     contracts.py (sözleşme + Protocol'ler) · bars · sentiment/flow feed · factor_brain
+  environment/  emir → fiyat etkisi → tick (+ dışsal şok enjeksiyonu)
+  agents/       12+ ajan (taban sınıf otomatik PnL takibi yapar)
+  analysis/     execution (paper) · journal (forward-test) · emergence · portfolio (HRP)
+  engine/       senkron tick döngüsü — beyin + ajanlar + şok + geri besleme
+signalcore/
+  indicators/   6 çekirdek faktör + 5 sensör (her biri saf: bars → FactorVote)
+  patterns/     mum + grafik formasyonları + destek/direnç
+  combine/      aggregator · regime_router · registry
+  risk/         sizing (yarım-Kelly) · levels (ATR) · tail (VaR/CVaR/Hill/EVT)
+  validation/   walkforward · leakage · conformal · calibration · cpcv · deflated_sharpe
+  brain.py      analyze(symbol, bars, extra_factors, sensor_states) → Card
+```
 
-**Faz 3**
-- [x] `adapters/factor_brain.py::SignalCoreFactorBrain` gerçek `signalcore.brain.analyze()`'i sarıyor; `adapters/bars.py` `Environment` tick geçmişini OHLCV bar'a çeviriyor.
-- [x] `adapters/sentiment_feed.py::SimSentimentFeed` + `adapters/flow_feed.py::SimFlowFeed` simülasyon modunda bağlı (deterministik mean-reverting süreçler — gerçek repo erişimi olmadığı için yer tutucu, yukarıdaki kısıtı oku).
-- [x] `extra_factors`: flow + sentiment düşük ağırlıkla (0.15) `FactorVote`'a çevrilip signalcore'a giriyor.
-- [x] `analysis/execution.py::PaperExecutor` (slipaj+komisyon modeli) + `analysis/journal.py::Journal` (forward-test defteri: sinyal → N tick sonra sonuç, win_rate/avg_pnl_pct) kuruldu ve `Engine`'e bağlandı.
-- [x] `run_faz3_demo.py`: 200 tick'lik simülasyonda 53 sinyal çözüldü, defter dürüstçe zarar gösterdi (win_rate=0.26) — bu **beklenen**: rastgele-yürüyüş ajanı + henüz kalibre edilmemiş bir ortamda gerçek bir "edge" iddia edilmiyor, yalnızca borunun uçtan uca ölçüm yaptığı kanıtlanıyor (bkz. FAZ-PLANI.md kural #5: "Simülasyon ≠ kehanet").
-- [x] Testler yeşil (166/166 → Faz 4 ile birlikte 182/182).
+---
 
-**Faz 4**
-- [x] `signalcore/indicators/derivatives.py` (funding/OI/basis/IV/put-call), `orderbook.py` (spread/derinlik dengesizliği/likidasyon haritası), `onchain.py` (netflow/stablecoin arzı/NVT/ETF akışı), `intermarket.py` (DXY/altın/10Y/S&P/risk-on-off), `cross_exchange.py` (coinbase premium/lead-lag/fiyat farkı) — her biri kendi `State` tipi + gerçek API/RPC gerektirmeyen deterministik `Sim*Feed` + saf factor fonksiyonu.
-- [x] `indicators/sensors.py::compute_sensor_votes()` beşini tek listeye indirgeyip sabit düşük ağırlıkla (0.2) `brain.analyze(..., sensor_states=...)`'e bağlıyor.
-- [x] `run_signalcore_brain_demo.py` sensörleri de factor_tracker'a kaydediyor: örnek koşuda yalnızca `onchain` ve `cross_exchange` pozitif IC gösterdi, diğer üçü (derivatives/orderbook/intermarket) negatif IC'de kaldığı için ağırlık artışına izin verilmiyor — kural (factor_tracker'da pozitif katkı olmadan ağırlık artmaz) burada da tutarlı uygulanıyor.
-- [x] Testler yeşil (182/182).
+## 🔌 Entegrasyon durumu ve sonraki adım
 
-**Not:** Bu 5 sensör de (Faz 3'teki sentiment/flow gibi) gerçek borsa/zincir/makro veri sağlayıcılarına bu oturumda erişimim olmadığı için deterministik sentetik süreçlerle çalışıyor — gerçek veri kaynakları bağlandığında yalnızca `Sim*Feed` sınıfları değişecek, `*_factor()` fonksiyonları ve `State` sözleşmeleri sabit kalacak şekilde tasarlandı.
+Bu repo ilk kez, diğer iki reponun **gerçek** kodunun yanında bulunuyor.
+Şu an `adapters/sentiment_feed.py` ve `flow_feed.py` içindeki `Sim*Feed`
+sınıfları deterministik **yer tutuculardır** — aynı `Protocol`'ü uygulayan ama
+gerçek repoları sarmayan sentetik süreçler.
 
-## Sıradaki adım: Faz 5
+**Sıradaki iş:** bu iki sınıfı, üstteki repoların hâlihazırda offline çalışan
+gerçek `FlowFeed` / `SentimentFeed` beslemelerine bağlamak. Sözleşme
+(`contracts.py`) sabit kalacak şekilde tasarlandığı için çekirdek mantığa
+dokunmak gerekmez. Detaylı yön için: [`PLAN.md`](PLAN.md), [`FAZ-PLANI.md`](FAZ-PLANI.md).
 
-Minimum CAS motoru (Katman 2, 04-B ilk çekirdek) — `agents/momentum.py`,
-`agents/market_maker.py`, `agents/panic.py` (her biri ~50 satır, tek
-kural; karar kuralları signalcore faktörlerinden ödünç alınacak).
-`environment/`'ın microstructure-analyzer'ın simülasyon modunu "çevre"
-olarak kullanması gerekiyordu ama o repo bu oturumda erişilebilir
-değildi — mevcut basit `Environment` (net emir dengesizliği → fiyat)
-bu fazda geçici çevre olarak kullanılmaya devam edecek. Senkron tick
-döngüsü zaten hazır (`Engine`); hedef ilk emergence gözlemi — fiyat
-serisi + ajan PnL dağılımı (bkz. FAZ-PLANI.md Faz 5).
+---
+
+## ⚖️ Uyarı & Lisans
+
+Yalnızca araştırma ve eğitim amaçlıdır. **Yatırım tavsiyesi değildir.** Kripto
+ticareti önemli risk taşır; yazarlar hiçbir kayıptan sorumlu değildir.
+
+MIT — bkz. [LICENSE](LICENSE).
