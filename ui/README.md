@@ -1,32 +1,52 @@
-# React + TypeScript + Vite
+# CAS Market Dashboard UI
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+React + TypeScript + Vite + Tailwind v4 + Recharts tabanlı CAS Market (Faz FE) arayüzü.
 
-Currently, two official plugins are available:
+## Hızlı Başlangıç
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm install
+npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Tarayıcıda `http://localhost:5173` açılır.
+
+## Komutlar
+
+| Komut | Açıklama |
+|-------|----------|
+| `npm run dev` | Geliştirme sunucusu (Vite, `/v1` proxy ile backend'e yönlendirilir) |
+| `npm run build` | Production build (`ui/dist`) |
+| `npm run preview` | Build edilmiş uygulamayı önizle |
+| `npm run test` | Vitest testlerini çalıştır |
+| `npm run lint` | Oxlint ile kod kalitesi kontrolü |
+
+## Backend Bağlantısı
+
+Geliştirme sırasında Vite, `/v1` isteklerini `http://127.0.0.1:8000`'e proxy eder.
+
+```bash
+# Ayrı terminalde backend
+python -m uvicorn cas_market_simulator.api.main:app --host 127.0.0.1 --port 8000
+```
+
+Mock veri yerine gerçek backend'i kullanmak için:
+
+```bash
+VITE_USE_MOCK=false npm run dev
+```
+
+Production'da FastAPI aynı domain altında `/v1` uçlarını serve eder ve statik `ui/dist`'i döndürür.
+
+## Ekranlar
+
+- **Analist Kartı**: Seçilen sembolün yön tahmini, güven skoru, faktör oyları, formasyonlar ve risk parametreleri.
+- **Mikroyapı**: Order flow, actor mix, defter okuma metrikleri.
+- **Sentiment & Şoklar**: Duygu analizi ve aktif piyasa şokları.
+- **CAS Laboratuvarı**: Simülasyon, fiyat seyri ve crowd emergence skoru.
+- **HITL Onay**: Model çıktısını operatör olarak gözden geçirme ve override.
+- **Kılavuz**: Uygulama içi yardım ve metrik açıklamaları.
+
+## Önemli Not
+
+Yatırım tavsiyesi değildir.

@@ -12,27 +12,42 @@ export default function CasLabPanel() {
 
   const refresh = () => getSimHistory().then(setHistory)
 
+  const latest = history[history.length - 1]
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-accent">CAS Laboratuvarı</h3>
-        <div className="flex gap-2">
-          <button
-            onClick={refresh}
-            className="px-4 py-2 bg-accent-blue/10 text-accent-blue border border-accent-blue/30 rounded-lg text-sm hover:bg-accent-blue/20"
-          >
-            Yenile
-          </button>
-          <button className="px-4 py-2 bg-accent-red/10 text-accent-red border border-accent-red/30 rounded-lg text-sm hover:bg-accent-red/20">
-            Panik Şoku
-          </button>
-          <button className="px-4 py-2 bg-accent-purple/10 text-accent-purple border border-accent-purple/30 rounded-lg text-sm hover:bg-accent-purple/20">
-            Balina Emri
-          </button>
+      <div className="bg-gradient-to-r from-accent-purple/10 to-accent-blue/10 border border-accent-purple/20 rounded-2xl p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-bold text-text">CAS Laboratuvarı</h2>
+            <p className="text-sm text-text-muted mt-1">Simülasyon, şok enjeksiyonu ve crowd emergence gözlemi</p>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={refresh}
+              className="px-4 py-2 bg-accent-blue/10 text-accent-blue border border-accent-blue/30 rounded-xl text-sm font-medium hover:bg-accent-blue/20 transition-colors"
+            >
+              🔄 Yenile
+            </button>
+            <button className="px-4 py-2 bg-accent-red/10 text-accent-red border border-accent-red/30 rounded-xl text-sm font-medium hover:bg-accent-red/20 transition-colors">
+              💥 Panik Şoku
+            </button>
+            <button className="px-4 py-2 bg-accent-purple/10 text-accent-purple border border-accent-purple/30 rounded-xl text-sm font-medium hover:bg-accent-purple/20 transition-colors">
+              🐋 Balina Emri
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="bg-surface border border-border rounded-xl p-6">
+      {latest && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Metric label="Son Fiyat" value={latest.price.toLocaleString()} />
+          <Metric label="Yön" value={latest.card_direction} />
+          <Metric label="Crowd Score" value={latest.crowd_emergence_score.toFixed(2)} />
+        </div>
+      )}
+
+      <div className="bg-surface border border-border rounded-2xl p-6 shadow-sm">
         <h4 className="text-sm font-semibold text-text-muted mb-4">Fiyat Seyri</h4>
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
@@ -47,7 +62,7 @@ export default function CasLabPanel() {
         </div>
       </div>
 
-      <div className="bg-surface border border-border rounded-xl p-6">
+      <div className="bg-surface border border-border rounded-2xl p-6 shadow-sm">
         <h4 className="text-sm font-semibold text-text-muted mb-4">Crowd Emergence Score</h4>
         <div className="h-48">
           <ResponsiveContainer width="100%" height="100%">
@@ -61,6 +76,15 @@ export default function CasLabPanel() {
           </ResponsiveContainer>
         </div>
       </div>
+    </div>
+  )
+}
+
+function Metric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="bg-surface-light p-4 rounded-xl border border-border text-center">
+      <div className="text-xs text-text-muted uppercase tracking-wide">{label}</div>
+      <div className="text-2xl font-bold text-text mt-1">{value}</div>
     </div>
   )
 }

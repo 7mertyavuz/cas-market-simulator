@@ -4,7 +4,7 @@ import AnalystCard from './AnalystCard'
 
 describe('AnalystCard', () => {
   it('renders the card symbol and factor votes', async () => {
-    render(<AnalystCard />)
+    render(<AnalystCard symbol="BTC" />)
     expect(await screen.findByText('BTC')).toBeInTheDocument()
     expect(screen.getByText('Faktör Oyları')).toBeInTheDocument()
   })

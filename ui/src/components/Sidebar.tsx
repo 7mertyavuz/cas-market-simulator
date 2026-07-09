@@ -11,6 +11,7 @@ const items: { key: View; label: string; icon: string }[] = [
   { key: 'sentiment', label: 'Sentiment & Şoklar', icon: '📰' },
   { key: 'caslab', label: 'CAS Laboratuvarı', icon: '🧪' },
   { key: 'hitl', label: 'HITL Onay', icon: '✋' },
+  { key: 'guide', label: 'Kılavuz', icon: '📖' },
 ]
 
 export default function Sidebar({ active, onChange }: Props) {
