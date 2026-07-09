@@ -11,6 +11,24 @@ from datetime import datetime, timezone
 from .contracts import BookState
 
 
+def to_signalcore_orderbook_state(book: BookState):
+    """cas-market-simulator BookState -> signalcore OrderbookState."""
+    from signalcore.indicators.orderbook import OrderbookState as SCOrderbookState
+
+    mid = book.microprice / (1.0 + getattr(book, "microprice_dev", 0.0)) if book.microprice > 0 else 0.0
+    dev = (book.microprice / mid - 1.0) if mid > 0 else 0.0
+    return SCOrderbookState(
+        spread_bps=book.spread_bps,
+        depth_imbalance=book.depth_imbalance,
+        liquidation_map_skew=book.liq_map_skew,
+        microprice_dev=dev,
+        ofi=book.ofi,
+        spoof_score=book.spoof_score,
+        absorption=book.absorption,
+        iceberg_score=book.iceberg_score,
+    )
+
+
 def _convert_micro_book(src) -> BookState:
     """microstructure-analyzer `src.book.state.BookState` -> simulator
     `BookState`. Alan adlari birebir eslestigi icin bu yalnizca siniflar
