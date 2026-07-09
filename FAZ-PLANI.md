@@ -161,6 +161,44 @@ Sıra kritik — **doğrulama, faktör çoğaltmadan ÖNCE gelir.**
 
 ---
 
+## FAZ FE — Ortak Frontend & Entegrasyon Dashboard *(yeni)*
+**Amaç:** üç reponun ürettiği tüm sinyalleri tek, gerçek zamanlı, etkileşimli ekranda birleştirmek. Sistem "karar destek" konumlandırmasını güçlendirir; yatırım tavsiyesi değildir.
+
+### FE-1 — Merkezi API cephesi
+- `cas-market-simulator/api/` altında tek bir FastAPI uygulaması:
+  - `GET /v1/card/{symbol}` → signalcore `Card` (yön · güven · risk · oylar · formasyonlar)
+  - `GET /v1/flow/{token}` → microstructure-analyzer `FlowState` + `BookState`
+  - `GET /v1/sentiment/{entity}` → macro-sentiment-agent `SentimentState`
+  - `GET /v1/shocks` → aktif `ShockEvent` listesi
+  - `GET /v1/sim/state` → CAS motoru: fiyat, ajan PnL'leri, crowd_emergence_score, kaskad metrikleri
+  - `WebSocket /v1/stream` → yukarıdaki tüm durumların anlık güncellemeleri
+- Diğer iki repo ile bağlantı önce simülasyon modunda, sonra canlı adapter'larla.
+
+### FE-2 — Ana dashboard ekranları
+| Ekran | İçerik | Veri kaynağı |
+|---|---|---|
+| **Analist Kartı** | Yön, güven, risk, oylar, formasyonlar, stop/TP | signalcore `Card` |
+| **Mikroyapı Paneli** | flow_imbalance, VPIN, actor_mix, regime, lead-lag, defter derinliği/heatmap | microstructure-analyzer `FlowState` + `BookState` |
+| **Sentiment & Şoklar** | Panik/euphoria/FED tonu, şok olayları, sönüm durumları | macro-sentiment-agent `SentimentState` + `ShockEvent` |
+| **CAS Laboratuvarı** | Fiyat serisi, ajan PnL dağılımı, crowd_emergence_score, kaskad replay | `cas-market-simulator` Engine |
+| **HITL Kuyruğu** | Yüksek-etki sinyalleri onayla/ret, geri besleme etiketi | macro-sentiment-agent review API |
+
+### FE-3 — Simülasyon kontrol paneli
+- Parametre slayderları: ajan sayısı, başlangıç likiditesi, şok magnitude/süresi
+- Butonlar: "panik şoku enjekte et", "balina emri gönder", "kaskad replay"
+- Senaryo kaydet/yükle: deterministik replay için JSONL import/export
+- Ajan ekle/çıkar/duraklat
+
+### FE-4 — Teknoloji ve konumlandırma
+- **Frontend:** React + Vite + TypeScript + Recharts/Tremor (modern, tip güvenli)
+- **Backend:** `cas-market-simulator` FastAPI (merkez), diğer iki repo zaten FastAPI/WebSocket destekliyor
+- **Dağıtım:** tek repo (`cas-market-simulator/ui/`) veya ayrı `cas-market-ui` repo; karar: başlangıçta `cas-market-simulator/ui/` içinde gelişir, gerektiğinde ayrılır
+- **İlkeler:** offline-first, simülasyon modu birinci sınıf, yatırım tavsiyesi değildir ibaresi her ekranda
+
+**Bitti:** tek ekranda üç reponun sinyalleri canlı akar; simülasyon kontrol edilebilir; HITL onayları yapılabilir.
+
+---
+
 ## Her kalem hangi fazda (03 + 04 izlenebilirlik)
 
 | Kaynak | Kalem | Faz |
@@ -182,6 +220,10 @@ Sıra kritik — **doğrulama, faktör çoğaltmadan ÖNCE gelir.**
 | 04 meta | adaptive, regime-switcher, herd + online öğrenme | 8 |
 | — | ShockEvent enjeksiyonu + emergence metrikleri | 6 |
 | — | crowd-emergence geri besleme | 7 |
+| FE | Merkezi API cephesi (`/v1/card`, `/v1/flow`, `/v1/sentiment`, `/v1/stream`) | FE-1 |
+| FE | Dashboard ekranları (kart, mikroyapı, sentiment, CAS lab, HITL) | FE-2 |
+| FE | Simülasyon kontrol paneli + senaryo replay | FE-3 |
+| FE | React + Vite UI iskeleti | FE-4 |
 
 ---
 
@@ -194,4 +236,4 @@ Sıra kritik — **doğrulama, faktör çoğaltmadan ÖNCE gelir.**
 6. **Simülasyon modu birinci sınıf.** Geliştirmeyi API/RPC olmadan yap.
 
 ## Sonraki adım
-Onayınla **Faz 0**'ı kurarım: `cas-market-simulator` paket iskeleti + `adapters/contracts.py` + `signalcore` çekirdeği (types/ohlcv/registry + sentetik OHLCV) + stub feed'ler ile çalışan ilk tick döngüsü.
+Faz 0–9 temel olarak tamamlandı; sıradaki büyük hamle **Faz FE — Ortak Frontend**. Onayınla `cas-market-simulator/ui/` altında React + Vite + TypeScript iskeletini kurar, ardından `api/main.py` üzerinden `/v1/card`, `/v1/flow`, `/v1/sentiment`, `/v1/shocks` ve `/v1/stream` WebSocket uçlarını açarım. İlk ekran "Analist Kartı" olur; simülasyon kontrol paneli ve HITL kuyruğu peşine eklenir.
