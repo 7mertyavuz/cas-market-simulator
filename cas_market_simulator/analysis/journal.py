@@ -27,6 +27,7 @@ class JournalEntry:
     resolved: bool = False
     exit_price: float | None = None
     pnl_pct: float | None = None
+    tags: list[str] = field(default_factory=list)  # D8: "book", "flow", "sentiment", ...
     entry_ts: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     exit_ts: datetime | None = None
 
@@ -40,7 +41,8 @@ class Journal:
         self.horizon_ticks = horizon_ticks
         self.entries: list[JournalEntry] = []
 
-    def record(self, fill: PaperFill, *, tick: int) -> JournalEntry:
+    def record(self, fill: PaperFill, *, tick: int,
+               tags: list[str] | None = None) -> JournalEntry:
         entry = JournalEntry(
             entry_tick=tick,
             symbol=fill.symbol,
@@ -49,6 +51,7 @@ class Journal:
             size_pct=fill.size_pct,
             cost_pct=fill.cost_pct,
             horizon_ticks=self.horizon_ticks,
+            tags=list(tags or []),
         )
         self.entries.append(entry)
         return entry
@@ -73,12 +76,28 @@ class Journal:
         return newly_resolved
 
     def stats(self) -> dict:
-        resolved = [e for e in self.entries if e.resolved]
+        return self._compute_stats(self.entries)
+
+    def stats_by_tag(self) -> dict[str, dict]:
+        """D8: her etiket grubu icin ayrı istatistik.
+
+        Bir kayit birden cok tag tasiyorsa her tag'e katilir.
+        Boylece "book kaynakli sinyaller gercekten katki veriyor mu?"
+        sorusuna cevap bulunur.
+        """
+        by_tag: dict[str, list[JournalEntry]] = {}
+        for e in self.entries:
+            for tag in (e.tags or ["untagged"]):
+                by_tag.setdefault(tag, []).append(e)
+        return {tag: self._compute_stats(entries) for tag, entries in by_tag.items()}
+
+    @staticmethod
+    def _compute_stats(entries: list[JournalEntry]) -> dict:
+        resolved = [e for e in entries if e.resolved]
         n = len(resolved)
-        open_count = len(self.entries) - n
+        open_count = len(entries) - n
         if n == 0:
             return {"n": 0, "win_rate": 0.0, "avg_pnl_pct": 0.0, "total_pnl_pct": 0.0, "open": open_count}
-
         wins = sum(1 for e in resolved if (e.pnl_pct or 0.0) > 0)
         total = sum(e.pnl_pct or 0.0 for e in resolved)
         return {
