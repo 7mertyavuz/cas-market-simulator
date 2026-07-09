@@ -3,3 +3,27 @@ __pycache__/
 .pytest_cache/
 .venv/
 *.egg-info/
+
+# Environment & secrets
+.env
+.env.*
+*.local
+
+# Logs
+*.log
+logs/
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Build / dependencies
+node_modules/
+dist/
+dist-ssr/
+build/
+coverage/

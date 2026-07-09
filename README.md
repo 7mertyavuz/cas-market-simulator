@@ -9,8 +9,8 @@ _Sinyal beyni + çok-ajanlı ekosistem — dürüstlük katmanıyla mühürlenmi
 
 ![tests](https://img.shields.io/badge/tests-334%20passing-2ea44f?style=flat-square)
 ![python](https://img.shields.io/badge/python-3.11%2B-3776ab?style=flat-square&logo=python&logoColor=white)
-![deps](https://img.shields.io/badge/deps-NumPy%20only-013243?style=flat-square&logo=numpy&logoColor=white)
-![offline](https://img.shields.io/badge/offline-first-6f42c1?style=flat-square)
+![react](https://img.shields.io/badge/react-19-61dafb?style=flat-square&logo=react&logoColor=white)
+![fastapi](https://img.shields.io/badge/fastapi-0.115-009688?style=flat-square&logo=fastapi&logoColor=white)
 ![license](https://img.shields.io/badge/license-MIT-black?style=flat-square)
 
 </div>
@@ -109,9 +109,14 @@ Bir simülatörün en tehlikeli yanı kendini kandırabilmesidir. Üretilen her 
 
 ## 🚀 Çalıştırma
 
+### Backend
+
 ```bash
 pip install -r requirements.txt
 pytest -q                                   # 334 test
+
+# Dashboard API
+python -m uvicorn cas_market_simulator.api.main:app --host 127.0.0.1 --port 8000
 
 # Demolar
 PYTHONPATH=. python scripts/run_faz3_demo.py
@@ -120,6 +125,18 @@ PYTHONPATH=. python scripts/run_faz7_demo.py
 PYTHONPATH=. python scripts/run_faz8_demo.py
 PYTHONPATH=. python scripts/run_faz9_demo.py
 ```
+
+### Frontend
+
+```bash
+cd ui
+npm install
+npm run dev        # http://localhost:5173
+npm run test       # UI testleri
+npm run build      # production build -> ui/dist
+```
+
+Vite geliştirme sunucusu `/v1` isteklerini otomatik olarak `http://127.0.0.1:8000`'e yönlendirir. Gerçek backend verisi için `VITE_USE_MOCK=false npm run dev` çalıştırın.
 
 Tüm çekirdek **saf Python + NumPy**. Feed'ler varsayılan olarak deterministik simülasyon modunda çalışır.
 
