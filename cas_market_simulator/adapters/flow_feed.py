@@ -10,6 +10,24 @@ from datetime import datetime, timezone
 from .contracts import FlowState
 
 
+def _convert_micro_flow(src) -> FlowState:
+    """microstructure-analyzer `src.models.FlowState` -> simulator
+    `FlowState`. Alan adlari birebir ayni; bu yalnizca siniflar arasi
+    gevsek baglama katidir.
+    """
+    return FlowState(
+        token=src.token,
+        flow_imbalance=src.flow_imbalance,
+        vpin_toxicity=src.vpin_toxicity,
+        whale_net_usd=src.whale_net_usd,
+        actor_mix=dict(getattr(src, "actor_mix", {})),
+        direction_prob_up=src.direction_prob_up,
+        lead_lag_spread=src.lead_lag_spread,
+        regime=src.regime,
+        ts=src.ts if isinstance(src.ts, datetime) else datetime.now(timezone.utc),
+    )
+
+
 class StubFlowFeed:
     """FlowFeed Protocol'unu implemente eden sahte besleme."""
 
@@ -77,3 +95,21 @@ class SimFlowFeed:
             regime=regime,
             ts=datetime.now(timezone.utc),
         )
+
+
+class MicrostructureFlowFeed:
+    """Gercek microstructure-analyzer FlowFeed sarici.
+
+    microstructure-analyzer reposu kurulu oldugunda calisir; yoksa
+    ImportError verir (bu sinifi kullanmadan once kurulum yapilmali).
+    Sim modu birinci siniftir -- WSS_URL bos ise deterministik sentetik
+    akis uretir, harici bagimlilik gerektirmez.
+    """
+
+    def __init__(self, **kwargs) -> None:
+        from src.api.flow_feed import FlowFeed as _FlowFeed
+
+        self._feed = _FlowFeed(**kwargs)
+
+    def latest(self, token: str) -> FlowState:
+        return _convert_micro_flow(self._feed.latest(token))

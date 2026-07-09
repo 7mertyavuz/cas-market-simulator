@@ -53,6 +53,31 @@ class FlowState:
     ts: datetime = field(default_factory=datetime.utcnow)
 
 
+# ── microstructure-analyzer uretir (defter okuma) ─────────────────
+@dataclass
+class BookState:
+    """L2/L3 defter okuma ciktisi (bkz. microstructure-analyzer
+    docs/00-ORTAK-SOZLESME.md BookState).
+
+    Ham/temiz metrik verir; agirlik karari motor tarafinda verilir.
+    `iceberg_score`/`spoof_score` kanit degil suphedir -- guven
+    carpani olarak kullanilir.
+    """
+    symbol: str
+    spread_bps: float          # >=0
+    microprice: float          # >0
+    depth_imbalance: float     # [-1,1]
+    ofi: float                 # serbest
+    queue_imbalance: float     # [-1,1]
+    book_slope: float          # >=0
+    kyle_lambda: float         # >=0
+    iceberg_score: float = 0.0  # [0,1]
+    spoof_score: float = 0.0    # [0,1]
+    absorption: float = 0.0     # [-1,1]
+    liq_map_skew: float = 0.0   # [-1,1]
+    ts: datetime = field(default_factory=datetime.utcnow)
+
+
 # ── signalcore (yeni indikator+formasyon motoru) uretir ───────────
 @dataclass
 class FactorVote:
@@ -89,6 +114,10 @@ class SentimentFeed(Protocol):
 
 class FlowFeed(Protocol):
     def latest(self, token: str) -> FlowState: ...
+
+
+class BookFeed(Protocol):
+    def latest(self, symbol: str) -> BookState: ...
 
 
 class FactorBrain(Protocol):

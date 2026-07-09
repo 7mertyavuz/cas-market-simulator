@@ -11,6 +11,31 @@ from datetime import datetime, timezone
 from .contracts import SentimentState, ShockEvent
 
 
+def _convert_macro_sentiment(src) -> SentimentState:
+    """macro-sentiment-agent `SentimentState` -> simulator `SentimentState`."""
+    return SentimentState(
+        entity=src.entity,
+        polarity=src.polarity,
+        intensity=src.intensity,
+        emotion=dict(getattr(src, "emotion", {})),
+        confidence=src.confidence,
+        fed_tone=src.fed_tone,
+        source_breakdown=dict(getattr(src, "source_breakdown", {})),
+        ts=src.ts if isinstance(src.ts, datetime) else datetime.now(timezone.utc),
+    )
+
+
+def _convert_macro_shock(src) -> ShockEvent:
+    """macro-sentiment-agent `ShockEvent` -> simulator `ShockEvent`."""
+    return ShockEvent(
+        kind=src.kind,
+        entity=src.entity,
+        magnitude=src.magnitude,
+        decay_halflife_s=src.decay_halflife_s,
+        ts=src.ts if isinstance(src.ts, datetime) else datetime.now(timezone.utc),
+    )
+
+
 class StubSentimentFeed:
     """SentimentFeed Protocol'unu implemente eden sahte besleme.
 
@@ -99,3 +124,23 @@ class SimSentimentFeed:
                 ts=datetime.now(timezone.utc),
             )
         ]
+
+
+class MacroSentimentFeed:
+    """Gercek macro-sentiment-agent SentimentFeed sarici.
+
+    macro-sentiment-agent reposu kurulu oldugunda calisir; offline modu
+    varsayilandir -- harici API/anahtar olmadan deterministik senaryo
+    replay veya varlik adindan turetilmis sentetik durum uretir.
+    """
+
+    def __init__(self, **kwargs) -> None:
+        from macro_sentiment.api.sentiment_feed import SentimentFeed as _SentimentFeed
+
+        self._feed = _SentimentFeed(**kwargs)
+
+    def latest(self, entity: str) -> SentimentState:
+        return _convert_macro_sentiment(self._feed.latest(entity))
+
+    def shocks(self, since: datetime) -> list[ShockEvent]:
+        return [_convert_macro_shock(s) for s in self._feed.shocks(since)]
