@@ -34,7 +34,6 @@ _Sinyal beyni + çok-ajanlı ekosistem — dürüstlük katmanıyla mühürlenmi
 - [Veri Sözleşmeleri](#-veri-sözleşmeleri)
 - [Dürüstlük Katmanı](#-dürüstlük-katmanı)
 - [Dashboard ve UI](#-dashboard-ve-ui)
-- [Faz Planı](#-faz-planı)
 - [Testler](#-testler)
 - [Sözlük](#-sözlük)
 - [Sorumluluk Reddi ve Lisans](#-sorumluluk-reddi-ve-lisans)
@@ -200,6 +199,8 @@ pytest -q                                   # 334 test
 python -m uvicorn cas_market_simulator.api.main:app --host 127.0.0.1 --port 8000
 
 # Demolar
+PYTHONPATH=. python scripts/run_signalcore_demo.py
+PYTHONPATH=. python scripts/run_signalcore_brain_demo.py
 PYTHONPATH=. python scripts/run_faz3_demo.py
 PYTHONPATH=. python scripts/run_faz5_demo.py
 PYTHONPATH=. python scripts/run_faz6_demo.py
@@ -352,7 +353,7 @@ class Agent:
 
 ## 🔗 Veri Sözleşmeleri
 
-`cas-market-simulator`, diğer repo'lara dokunmadan sadece veri tipleri üzerinden bağlanır. Tam şema için bkz. [`prompts/00-ORTAK-SOZLESME.md`](prompts/00-ORTAK-SOZLESME.md).
+`cas-market-simulator`, diğer repo'lara dokunmadan sadece veri tipleri üzerinden bağlanır.
 
 ### `FlowState` (lob-microstructure-agent'dan)
 
@@ -449,26 +450,6 @@ npm run dev
 ```
 
 Tarayıcıda `http://localhost:5173` açın.
-
----
-
-## 📅 Faz Planı
-
-Sistem, her biri tek başına değer üreten fazlar halinde inşa edilmiştir. Detaylı plan için bkz. [`FAZ-PLANI.md`](FAZ-PLANI.md).
-
-| Faz | Kapsam | Durum |
-|---|---|---|
-| **Faz 0** | İskelet + sözleşmeler | ✅ |
-| **Faz 1** | signalcore MVP (beyin) | ✅ |
-| **Faz 2** | Formasyon motoru | ✅ |
-| **Faz 3** | Analist çekirdeği + forward-test | ✅ |
-| **Faz 4** | Sensör ajanları | ✅ |
-| **Faz 5** | Minimum CAS motoru | ✅ |
-| **Faz 6** | Emergence + likidasyon kaskadı | ✅ |
-| **Faz 7** | Geri besleme (iki katman birleşir) | ✅ |
-| **Faz 8** | Adaptasyon / evrim | ✅ |
-| **Faz 9** | Doğrulama & kalibrasyon | ✅ |
-| **Faz FE** | Ortak frontend & dashboard | ✅ |
 
 ---
 
