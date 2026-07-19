@@ -5,6 +5,8 @@
 **Karmaşık Uyarlanabilir Sistem (CAS) tabanlı piyasa simülatörü**  
 _Sinyal beyni + çok-ajanlı ekosistem — dürüstlük katmanıyla mühürlenmiş._
 
+🌐 **Türkçe** · [English](README.en.md)
+
 <br/>
 
 ![tests](https://img.shields.io/badge/tests-334%20passing-2ea44f?style=flat-square)
