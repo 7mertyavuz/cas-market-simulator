@@ -71,6 +71,10 @@ class BookState:
     queue_imbalance: float     # [-1,1]
     book_slope: float          # >=0
     kyle_lambda: float         # >=0
+    # `mid` olmadan microprice sapmasi HESAPLANAMAZ. Yoklugu, asagidaki
+    # to_signalcore_orderbook_state()'in sapmayi her zaman tam 0.0 uretmesine
+    # yol aciyordu -- sessiz bir olu yol.
+    mid: float = 0.0            # >0, en iyi alis-satis orta noktasi
     iceberg_score: float = 0.0  # [0,1]
     spoof_score: float = 0.0    # [0,1]
     absorption: float = 0.0     # [-1,1]

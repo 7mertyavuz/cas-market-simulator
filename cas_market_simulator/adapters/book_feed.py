@@ -11,12 +11,38 @@ from datetime import datetime, timezone
 from .contracts import BookState
 
 
+def microprice_dev(book: BookState) -> float:
+    """Stoikov mikro-fiyatin orta noktadan sapmasi: (microprice - mid)/mid.
+
+    Yonlu bir sinyaldir: pozitif sapma, derinligin alis tarafinda yogunlastigini
+    yani yukari baskiyi gosterir.
+
+    BU FONKSIYON BIR HATANIN DUZELTMESIDIR. Onceki hali soyleydi:
+
+        mid = book.microprice / (1.0 + getattr(book, "microprice_dev", 0.0))
+        dev = (book.microprice / mid - 1.0) if mid > 0 else 0.0
+
+    `BookState`'te `microprice_dev` diye bir alan hicbir zaman OLMADI, dolayisiyla
+    getattr her seferinde 0.0 donuyordu; o zaman mid = microprice / 1.0 = microprice
+    ve dev = microprice/microprice - 1 = TAM OLARAK 0.0 oluyordu. Her zaman.
+    `orderbook_factor` bu bilesenden hicbir katki almiyordu ve hicbir test bunu
+    yakalamiyordu -- getattr varsayilani cokmeyi onledi ama sessiz bir olu yol
+    uretti.
+
+    Asil eksik `mid` alaniydi; artik hem microstructure-analyzer hem de bu repo
+    onu sozlesmede tasiyor.
+    """
+    mid = float(getattr(book, "mid", 0.0) or 0.0)
+    if mid <= 0.0 or book.microprice <= 0.0:
+        return 0.0
+    return book.microprice / mid - 1.0
+
+
 def to_signalcore_orderbook_state(book: BookState):
     """cas-market-simulator BookState -> signalcore OrderbookState."""
     from signalcore.indicators.orderbook import OrderbookState as SCOrderbookState
 
-    mid = book.microprice / (1.0 + getattr(book, "microprice_dev", 0.0)) if book.microprice > 0 else 0.0
-    dev = (book.microprice / mid - 1.0) if mid > 0 else 0.0
+    dev = microprice_dev(book)
     return SCOrderbookState(
         spread_bps=book.spread_bps,
         depth_imbalance=book.depth_imbalance,
@@ -38,6 +64,9 @@ def _convert_micro_book(src) -> BookState:
         symbol=src.symbol,
         spread_bps=src.spread_bps,
         microprice=src.microprice,
+        # Sozlesmenin yeni alani; eski bir micro surumu icin getattr ile tolere
+        # edilir ama o durumda sapma yine 0 kalir (ve bu artik bilinen bir sey).
+        mid=float(getattr(src, "mid", 0.0) or 0.0),
         depth_imbalance=src.depth_imbalance,
         ofi=src.ofi,
         queue_imbalance=src.queue_imbalance,
@@ -59,6 +88,7 @@ class StubBookFeed:
             symbol=symbol,
             spread_bps=5.0,
             microprice=30_000.0,
+            mid=30_000.0,
             depth_imbalance=0.0,
             ofi=0.0,
             queue_imbalance=0.0,
@@ -87,10 +117,16 @@ class SimBookFeed:
             -1.0, min(1.0, self._depth_imbalance + self._rng.normal(0, 0.1))
         )
         self._spread_bps = max(1.0, self._spread_bps + self._rng.normal(0, 0.5))
+        mid = 30_000.0 + self._rng.normal(0, 10.0)
+        # Mikro-fiyat mid'den derinlik dengesizligi yonunde sapar (Stoikov):
+        # alis tarafi agirsa mikro-fiyat mid'in ustunde oturur. Sabit bir mid
+        # kullanmak sapmayi yine 0'a kilitlerdi.
+        half_spread = mid * self._spread_bps / 1e4 / 2.0
         return BookState(
             symbol=symbol,
             spread_bps=self._spread_bps,
-            microprice=30_000.0 + self._rng.normal(0, 10.0),
+            microprice=mid + half_spread * self._depth_imbalance,
+            mid=mid,
             depth_imbalance=self._depth_imbalance,
             ofi=self._rng.normal(0, 5.0),
             queue_imbalance=self._depth_imbalance * 0.8,
@@ -108,7 +144,9 @@ class MicrostructureBookFeed:
     """Gercek microstructure-analyzer BookFeed sarici."""
 
     def __init__(self, **kwargs) -> None:
-        from src.book.feed import BookFeed as _BookFeed
+        # Paket adi `src` -> `lob_microstructure` olarak degisti (genel bir ad
+        # olan `src` baska projelerle cakisiyordu).
+        from lob_microstructure.book.feed import BookFeed as _BookFeed
 
         self._feed = _BookFeed(**kwargs)
 

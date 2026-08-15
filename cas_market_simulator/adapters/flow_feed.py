@@ -107,7 +107,8 @@ class MicrostructureFlowFeed:
     """
 
     def __init__(self, **kwargs) -> None:
-        from src.api.flow_feed import FlowFeed as _FlowFeed
+        # Paket adi `src` -> `lob_microstructure` olarak degisti.
+        from lob_microstructure.api.flow_feed import FlowFeed as _FlowFeed
 
         self._feed = _FlowFeed(**kwargs)
 
